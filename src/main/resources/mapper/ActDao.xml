@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aqinn.actmanagersysserver.dao.ActDao">
+
+    <insert id="insertAct" keyProperty="id" useGeneratedKeys="true">
+        INSERT ignore INTO activity_manager.act(uId, code, pwd, name, `desc`, location, time, isOpen)
+        VALUES (#{uId}, #{code}, #{pwd}, #{name}, #{desc}, #{location}, #{time}, #{isOpen})
+    </insert>
+
+    <delete id="removeAct">
+        delete
+        from activity_manager.act
+        where id = #{id}
+    </delete>
+
+    <update id="updateAct" parameterType="Act">
+        update activity_manager.act
+        SET
+            uId=#{act.uId},
+            code=#{act.code},
+            pwd=#{act.pwd},
+            name=#{act.name},
+            `desc`=#{act.desc},
+            location=#{act.location},
+            time=#{act.time},
+            isOpen=#{act.isOpen}
+        WHERE
+            id=#{act.id}
+    </update>
+
+    <select id="queryActById" resultType="Act">
+        SELECT id, uId, code, pwd, name, `desc`, location, time, isOpen
+        FROM activity_manager.act
+        WHERE id = #{id}
+    </select>
+
+    <select id="queryActByCode" resultType="Act">
+        SELECT id, uId, code, pwd, name, `desc`, location, time, isOpen
+        FROM activity_manager.act
+        WHERE code = #{code}
+    </select>
+
+    <select id="queryActByCreatorId" resultType="Act">
+        SELECT id, uId, code, pwd, name, `desc`, location, time, isOpen
+        FROM activity_manager.act
+        WHERE uId = #{uId}
+    </select>
+</mapper>

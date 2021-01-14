@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aqinn.actmanagersysserver.dao.UserActDao">
+
+    <insert id="insertUserAct">
+        INSERT ignore INTO activity_manager.user_act(uId, actId)
+        VALUES (#{uId}, #{actId})
+    </insert>
+
+    <delete id="removeUserAct">
+        delete
+        from activity_manager.user_act
+        where uId=#{uId} AND actId=#{actId}
+    </delete>
+
+    <select id="queryUserActs" resultType="Act">
+        SELECT id, act.uId, code, pwd, name, `desc`, location, time, isOpen
+        FROM activity_manager.act INNER JOIN user_act ua on act.id = ua.actId
+        WHERE ua.uId = #{uId}
+    </select>
+
+    <select id="queryActUsers" resultType="User">
+        SELECT id, account, pwd, name, contact, sex, intro
+        FROM activity_manager.user INNER JOIN user_act ua on user.id = ua.uId
+        WHERE ua.actId = #{actId}
+    </select>
+
+    <select id="queryUserAct" resultType="UserAct">
+        SELECT uId, actId
+        FROM activity_manager.user_act
+        WHERE uId = #{uId} AND actId=#{actId}
+    </select>
+
+</mapper>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aqinn.actmanagersysserver.dao.UserDao">
+
+    <insert id="insertUser" useGeneratedKeys="true" keyProperty="id">
+        INSERT ignore INTO activity_manager.user(account, pwd, name, contact, sex, intro)
+        VALUES (#{account}, #{pwd}, #{name}, #{contact}, #{sex}, #{intro})
+    </insert>
+
+    <update id="updateUser" parameterType="User">
+        update activity_manager.user
+        SET
+            account=#{user.account},
+            pwd=#{user.pwd},
+            name=#{user.name},
+            contact=#{user.contact},
+            sex=#{user.sex},
+            intro=#{user.intro}
+        WHERE
+            id=#{user.id}
+    </update>
+
+    <select id="queryUserById" resultType="User">
+        SELECT id, account, pwd, name, contact, sex, intro
+        FROM activity_manager.user
+        WHERE id = #{id};
+    </select>
+
+    <select id="queryUserByAccount" resultType="User">
+        SELECT id, account, pwd, name, contact, sex, intro
+        FROM activity_manager.user
+        WHERE account = #{account};
+    </select>
+
+
+</mapper>
