@@ -2,9 +2,11 @@ package com.aqinn.actmanagersysserver.service.Impl;
 
 import com.aqinn.actmanagersysserver.dao.UserActDao;
 import com.aqinn.actmanagersysserver.entity.Act;
+import com.aqinn.actmanagersysserver.entity.Attend;
 import com.aqinn.actmanagersysserver.entity.User;
 import com.aqinn.actmanagersysserver.entity.UserAct;
 import com.aqinn.actmanagersysserver.service.ActService;
+import com.aqinn.actmanagersysserver.service.AttendService;
 import com.aqinn.actmanagersysserver.service.UserActService;
 import com.aqinn.actmanagersysserver.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ public class UserActServiceImpl implements UserActService {
     @Autowired
     private ActService actService;
 
+    @Autowired
+    private AttendService attendService;
+
     @Override
     public int joinAct(UserAct userAct) {
         User user = userService.getUserById(userAct.getuId());
@@ -36,6 +41,11 @@ public class UserActServiceImpl implements UserActService {
         Act act = actService.getActById(userAct.getActId());
         if (act == null)
             return -2;
+        List<Attend> attendList = attendService.getAttendByActId(act.getId());
+        for (Attend a:attendList) {
+            if (a.getIsOpen().equals(2))
+                return -3;
+        }
         return userActDao.insertUserAct(userAct);
     }
 

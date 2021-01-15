@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aqinn.actmanagersysserver.dao.UserFeatureDao">
+
+    <insert id="insertFeature">
+        INSERT ignore INTO activity_manager.user_feature(uId, feature)
+        VALUES (#{uId}, #{feature})
+    </insert>
+
+    <delete id="removeAll">
+        DELETE
+        FROM user_feature
+        WHERE uId = #{uId}
+    </delete>
+
+    <select id="queryByActId" resultType="UserFeature">
+        SELECT uId, feature
+        FROM user_feature
+        WHERE uId IN
+              (SELECT ua.uId FROM user_act ua WHERE actId = #{actId})
+    </select>
+
+</mapper>

@@ -39,6 +39,9 @@ public class UserActController {
     @Autowired
     private UserAttendService userAttendService;
 
+    @Autowired
+    private UserFeatureService userFeatureService;
+
     @RequestMapping(value = "/useract/{userId}", method = RequestMethod.POST)
     @ResponseBody
     public Map<String, Object> joinAct(@PathVariable("userId") Long userId, HttpServletRequest request) {
@@ -49,7 +52,7 @@ public class UserActController {
         }
         Long code = Long.valueOf((String) dataMap.get("code"));
         Long pwd = Long.valueOf((String) dataMap.get("pwd"));
-        Act act = actService.getActByCode(code);
+        final Act act = actService.getActByCode(code);
         if (act == null)
             return rd.falseSuccess("活动不存在").buildReturnMap();
         if (!act.getPwd().equals(pwd))
@@ -73,6 +76,14 @@ public class UserActController {
             data.put("location", act.getLocation());
             data.put("intro", act.getDesc());
             rd.trueSuccess().setData(data);
+            if (UserFeatureController.actFeatures.containsKey(act.getId())) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        UserFeatureController.forceRefreshActFeatures(act.getId(), userFeatureService);
+                    }
+                }).start();
+            }
         } else {
             if (res == 0)
                 rd.falseSuccess("请勿重复加入该活动");
@@ -80,6 +91,8 @@ public class UserActController {
                 rd.falseSuccess("用户不存在");
             else if (res == -2)
                 rd.falseSuccess("活动不存在");
+            else if (res == -3)
+                rd.falseSuccess("活动签到进行中，禁止加入");
             else
                 rd.falseSuccess("加入活动失败，未知原因");
         }
