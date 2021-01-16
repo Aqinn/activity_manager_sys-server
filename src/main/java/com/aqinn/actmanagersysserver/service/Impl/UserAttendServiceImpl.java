@@ -7,6 +7,8 @@ import com.aqinn.actmanagersysserver.service.UserAttendService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * @Author Aqinn
  * @Date 2020/12/22 1:13 下午
@@ -54,4 +56,18 @@ public class UserAttendServiceImpl implements UserAttendService {
         return userAttendDao.queryUserAttend(userId, attendId);
     }
 
+    @Override
+    public int getUserAttendCount(Long attendId) {
+        return userAttendDao.queryUserAttendCount(attendId);
+    }
+
+    @Override
+    public List<UserAttend> getSelfUserAttendAfterTime(Long attendId, Long time) {
+        return userAttendDao.querySelfUserAttendAfterTime(attendId, time);
+    }
+
+    @Override
+    public List<UserAttend> getVideoUserAttendAfterTime(Long attendId, Long time) {
+        return userAttendDao.queryVideoUserAttendAfterTime(attendId, time);
+    }
 }

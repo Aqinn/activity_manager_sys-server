@@ -3,10 +3,8 @@ package com.aqinn.actmanagersysserver.web;
 import com.alibaba.fastjson.JSONObject;
 import com.aqinn.actmanagersysserver.RequestLogInterceptor;
 import com.aqinn.actmanagersysserver.ReturnData;
-import com.aqinn.actmanagersysserver.entity.User;
-import com.aqinn.actmanagersysserver.entity.UserFeature;
-import com.aqinn.actmanagersysserver.service.UserFeatureService;
-import com.aqinn.actmanagersysserver.service.UserService;
+import com.aqinn.actmanagersysserver.entity.*;
+import com.aqinn.actmanagersysserver.service.*;
 import com.aqinn.actmanagersysserver.utils.HttpServletRequestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +33,19 @@ public class UserFeatureController {
     @Autowired
     private UserFeatureService userFeatureService;
 
-    private static Logger logger = LoggerFactory.getLogger(UserFeatureController.class);
-    private double threshold = 0.5;
+    @Autowired
+    private ActService actService;
+
+    @Autowired
+    private AttendService attendService;
+
+    @Autowired
+    private UserAttendService userAttendService;
+
+    private static final Logger logger = LoggerFactory.getLogger(UserFeatureController.class);
+    private final double threshold = 0.5;
     public static HashMap<Long, List<UserFeature>> actFeatures = new HashMap<>();
+    private static final Object checkLock = new Object();
 
     @RequestMapping(value = "/userfeature/{userId}", method = RequestMethod.POST)
     @ResponseBody
@@ -52,25 +60,25 @@ public class UserFeatureController {
         String f2 = (String) dataMap.get("f2");
         String f3 = (String) dataMap.get("f3");
         String f4 = (String) dataMap.get("f4");
-        String f1Arr[] = f1.split(",");
-        String f2Arr[] = f2.split(",");
-        String f3Arr[] = f3.split(",");
-        String f4Arr[] = f4.split(",");
+        String[] f1Arr = f1.split(",");
+        String[] f2Arr = f2.split(",");
+        String[] f3Arr = f3.split(",");
+        String[] f4Arr = f4.split(",");
         if (f1Arr.length != 128 || f2Arr.length != 128 ||
                 f3Arr.length != 128 || f4Arr.length != 128)
             return rd.falseSuccess("人脸特征数量错误，应该是 128 维向量").buildReturnMap();
         try {
-            for (int i = 0; i < f1Arr.length; i++) {
-                Float.valueOf(f1Arr[i]);
+            for (String s : f1Arr) {
+                Float.valueOf(s);
             }
-            for (int i = 0; i < f2Arr.length; i++) {
-                Float.valueOf(f2Arr[i]);
+            for (String s : f2Arr) {
+                Float.valueOf(s);
             }
-            for (int i = 0; i < f3Arr.length; i++) {
-                Float.valueOf(f3Arr[i]);
+            for (String s : f3Arr) {
+                Float.valueOf(s);
             }
-            for (int i = 0; i < f4Arr.length; i++) {
-                Float.valueOf(f4Arr[i]);
+            for (String s : f4Arr) {
+                Float.valueOf(s);
             }
         } catch (NumberFormatException e) {
             e.printStackTrace();
@@ -83,19 +91,26 @@ public class UserFeatureController {
             return rd.falseSuccess("人脸特征插入数据库过程中出错").buildReturnMap();
     }
 
-    @RequestMapping(value = "/userfeature/check/{actId}/{userId}", method = RequestMethod.POST)
+    @RequestMapping(value = "/userfeature/check/{attendId}/{userId}", method = RequestMethod.POST)
     @ResponseBody
-    public Map<String, Object> singleFaceRecognize(@PathVariable("actId") Long actId, @PathVariable("userId") Long userId, HttpServletRequest request) {
+    public Map<String, Object> singleFaceRecognize(@PathVariable("attendId") Long attendId, @PathVariable("userId") Long userId, HttpServletRequest request) {
         Map<String, Object> dataMap = HttpServletRequestUtil.getRequestParams(request);
         ReturnData rd = new ReturnData();
         if (!dataMap.containsKey("feature")) {
             return rd.falseSuccess("没有传递足够数据").buildReturnMap();
         }
+        Attend attend = attendService.getAttendById(attendId);
+        if (attend == null)
+            return rd.falseSuccess("签到不存在").buildReturnMap();
+        Act act = actService.getActById(attend.getActId());
+        if (act == null)
+            return rd.falseSuccess("签到所对应的活动不存在，后台背锅").buildReturnMap();
+        Long actId = act.getId();
         String feature = (String) dataMap.get("feature");
-        String fArr[] = feature.split(",");
+        String[] fArr = feature.split(",");
         if (fArr.length != 128)
             return rd.falseSuccess("人脸特征数量错误，应该是 128 维向量").buildReturnMap();
-        float ff[] = new float[128];
+        float[] ff = new float[128];
         try {
             for (int i = 0; i < fArr.length; i++) {
                 ff[i] = Float.parseFloat(fArr[i]);
@@ -106,8 +121,16 @@ public class UserFeatureController {
         }
         boolean res = checkSingleFace(actId, userId, ff);
         if (res) {
+            // 签到
+            synchronized (checkLock) {
+                UserAttend temp = userAttendService.getUserAttend(userId, attendId);
+                if (temp != null)
+                    return rd.falseSuccess("该人脸已经签到过了，请勿重复签到").buildReturnMap();
+                UserAttend userAttend = new UserAttend(userId, attendId, System.currentTimeMillis(),2);
+                userAttendService.attend(userAttend);
+            }
             User user = userService.getUserById(userId);
-            return rd.trueSuccess().setData(user.getAccount() + "," + user.getName()).buildReturnMap();
+            return rd.trueSuccess().setData("账号:"+user.getAccount() + ", 昵称:" + user.getName()+"（自助签到）").buildReturnMap();
         } else {
             return rd.falseSuccess("签到失败，该人脸信息并未在签到列表中").buildReturnMap();
         }
@@ -118,18 +141,25 @@ public class UserFeatureController {
     public Map<String, Object> videoFrameFaceRecognize(HttpServletRequest request) {
         Map<String, Object> dataMap = HttpServletRequestUtil.getRequestParams(request);
         ReturnData rd = new ReturnData();
-        if (!dataMap.containsKey("feature") || !dataMap.containsKey("actId")) {
+        if (!dataMap.containsKey("feature") || !dataMap.containsKey("attendId")) {
             return rd.falseSuccess("没有传递足够数据").buildReturnMap();
         }
-        Long actId = Long.valueOf(String.valueOf(dataMap.get("actId")));
+        Long attendId = Long.valueOf(String.valueOf(dataMap.get("attendId")));
         String feature = (String) dataMap.get("feature");
+        Attend attend = attendService.getAttendById(attendId);
+        if (attend == null)
+            return rd.falseSuccess("签到不存在").buildReturnMap();
+        Act act = actService.getActById(attend.getActId());
+        if (act == null)
+            return rd.falseSuccess("签到所对应的活动不存在，后台背锅").buildReturnMap();
+        Long actId = act.getId();
         if (!actFeatures.containsKey(actId)) {
             actFeatures.put(actId, userFeatureService.queryUserFeaturesByActId(actId));
         }
-        String fArr[] = feature.split(",");
+        String[] fArr = feature.split(",");
         if (fArr.length != 128)
             return rd.falseSuccess("人脸特征数量错误，应该是 128 维向量").buildReturnMap();
-        float ff[] = new float[128];
+        float[] ff = new float[128];
         try {
             for (int i = 0; i < fArr.length; i++) {
                 ff[i] = Float.parseFloat(fArr[i]);
@@ -140,8 +170,19 @@ public class UserFeatureController {
         }
         Long res = checkVideoFace(actId, ff);
         if (res > 0L) {
+            // 签到
+            int attendRes;
+            synchronized (checkLock) {
+                UserAttend temp = userAttendService.getUserAttend(res, attendId);
+                if (temp != null)
+                    return rd.falseSuccess("该人脸已经签到过了，请勿重复签到").buildReturnMap();
+                UserAttend userAttend = new UserAttend(res, attendId, System.currentTimeMillis(), 1);
+                attendRes = userAttendService.attend(userAttend);
+            }
+            logger.debug("attendRes: " + attendRes);
+//            if (attendRes)
             User user = userService.getUserById(res);
-            return rd.trueSuccess().setData(user.getAccount() + "," + user.getName()).buildReturnMap();
+            return rd.trueSuccess().setData("账号:"+user.getAccount() + ", 昵称:" + user.getName()+"（视频签到）").buildReturnMap();
         } else {
             return rd.falseSuccess("签到失败，该人脸信息并未在签到列表中").buildReturnMap();
         }
@@ -151,18 +192,18 @@ public class UserFeatureController {
         actFeatures.put(actId, service.queryUserFeaturesByActId(actId));
     }
 
-    private Long checkVideoFace(Long actId, float features[]) {
+    private Long checkVideoFace(Long actId, float[] features) {
         if (!actFeatures.containsKey(actId)) {
             actFeatures.put(actId, userFeatureService.queryUserFeaturesByActId(actId));
         }
         List<UserFeature> list = actFeatures.get(actId);
         logger.debug(list.toString());
         for (UserFeature uf : list) {
-            String fArr[] = uf.getFeature().split(",");
-            if (fArr == null || fArr.length != 128) {
+            String[] fArr = uf.getFeature().split(",");
+            if (fArr.length != 128) {
                 return -1L;
             }
-            float ff[] = new float[128];
+            float[] ff = new float[128];
             try {
                 for (int i = 0; i < fArr.length; i++) {
                     ff[i] = Float.parseFloat(fArr[i]);
@@ -181,18 +222,18 @@ public class UserFeatureController {
         return -3L;
     }
 
-    private boolean checkSingleFace(Long actId, Long userId, float features[]) {
+    private boolean checkSingleFace(Long actId, Long userId, float[] features) {
         if (!actFeatures.containsKey(actId)) {
             actFeatures.put(actId, userFeatureService.queryUserFeaturesByActId(actId));
         }
         List<UserFeature> list = actFeatures.get(actId);
         logger.debug(list.toString());
         for (UserFeature uf : list) {
-            String fArr[] = uf.getFeature().split(",");
-            if (fArr == null || fArr.length != 128) {
+            String[] fArr = uf.getFeature().split(",");
+            if (fArr.length != 128) {
                 return false;
             }
-            float ff[] = new float[128];
+            float[] ff = new float[128];
             try {
                 for (int i = 0; i < fArr.length; i++) {
                     ff[i] = Float.parseFloat(fArr[i]);
@@ -211,7 +252,7 @@ public class UserFeatureController {
         return false;
     }
 
-    private float compare(float feature1[], float feature2[], int distance) {
+    private float compare(float[] feature1, float[] feature2, int distance) {
         if (feature1 == null || feature2 == null)
             return -1001;
         if (feature1.length != 128 || feature2.length != 128)

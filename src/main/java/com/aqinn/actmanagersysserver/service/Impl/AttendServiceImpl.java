@@ -32,6 +32,7 @@ public class AttendServiceImpl implements AttendService {
             return -1L;
         if (actDao.queryActById(attend.getActId()) == null)
             return -2L;
+        attend.setIsOpen(1);
         if (attendDao.insertAttend(attend) <= 0)
             return -3L;
         return attend.getId();

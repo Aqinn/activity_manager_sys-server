@@ -17,7 +17,7 @@ public class UserAttendServiceTest extends BaseTest {
 
     @Test
     public void attend() {
-        System.out.println(userAttendService.attend(new UserAttend(15L, 4L, "12:01", 1)));
+        System.out.println(userAttendService.attend(new UserAttend(15L, 4L, 1235L, 1)));
     }
 
 }

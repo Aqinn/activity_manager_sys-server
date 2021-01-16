@@ -111,9 +111,11 @@ public class CommonController {
                 jo.put("time", attend.getTime());
                 jo.put("type", attend.getType());
                 jo.put("status", attend.getIsOpen());
-                jo.put("shouldAttendCount", -1);
-                jo.put("haveAttendCount", -1);
-                jo.put("notAttendCount", -1);
+                int shouldAttendCount = userActService.getActUsers(attend.getActId()).size();
+                int haveAttendCount = userAttendService.getUserAttendCount(attend.getId());
+                jo.put("shouldAttendCount", shouldAttendCount);
+                jo.put("haveAttendCount", haveAttendCount);
+                jo.put("notAttendCount", shouldAttendCount - haveAttendCount);
                 data.add(jo);
             }
         }

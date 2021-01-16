@@ -18,7 +18,7 @@ public class UserAttendDaoTest extends BaseTest {
 
     @Test
     public void insertUserAttend() {
-        UserAttend userAttend = new UserAttend(15L, 1L, "00:01", 1);
+        UserAttend userAttend = new UserAttend(15L, 1L, 1234L, 1);
         userAttendDao.insertUserAttend(userAttend);
     }
 }

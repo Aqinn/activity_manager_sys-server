@@ -1,6 +1,11 @@
 package com.aqinn.actmanagersysserver.web;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.aqinn.actmanagersysserver.ReturnData;
+import com.aqinn.actmanagersysserver.entity.Act;
+import com.aqinn.actmanagersysserver.entity.Attend;
+import com.aqinn.actmanagersysserver.entity.User;
 import com.aqinn.actmanagersysserver.entity.UserAttend;
 import com.aqinn.actmanagersysserver.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,7 +49,7 @@ public class UserAttendController {
         if (1 > attendType || attendType > 2) {
             return rd.falseSuccess("未知签到类型").buildReturnMap();
         }
-        UserAttend userAttend = new UserAttend(userId, attendId, new Date().toString(), attendType);
+        UserAttend userAttend = new UserAttend(userId, attendId, System.currentTimeMillis(), attendType);
         int res = userAttendService.attend(userAttend);
         if (res >= 1) {
             rd.trueSuccess();
@@ -62,6 +68,64 @@ public class UserAttendController {
                 rd.falseSuccess("签到失败，未知原因");
         }
         return rd.buildReturnMap();
+    }
+
+    @RequestMapping(value = "/userattend/{attendId}", method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String, Object> getAttendCount(@PathVariable("attendId") Long attendId) {
+        ReturnData rd = new ReturnData();
+        Attend attend = attendService.getAttendById(attendId);
+        if (attend == null)
+            return rd.falseSuccess("签到不存在").buildReturnMap();
+        int haveAttendCount = userAttendService.getUserAttendCount(attendId);
+        List<User> userList = userActService.getActUsers(attend.getActId());
+        if (userList == null)
+            return rd.falseSuccess("签到对应的活动不存在，后台的锅").buildReturnMap();
+        int shouldAttendCount = userList.size();
+        JSONObject jo = new JSONObject();
+        jo.put("haveAttendCount", haveAttendCount);
+        jo.put("shouldAttendCount", shouldAttendCount);
+        return rd.trueSuccess().setData(jo.toString()).buildReturnMap();
+    }
+
+    @RequestMapping(value = "/userattend/self/{attendId}/{timestamp}", method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String, Object> getSelfUserAttendAfterTime(@PathVariable("attendId") Long attendId, @PathVariable("timestamp") Long timestamp) {
+        ReturnData rd = new ReturnData();
+        Attend attend = attendService.getAttendById(attendId);
+        if (attend == null)
+            return rd.falseSuccess("签到不存在").buildReturnMap();
+        // TODO 这里还应该判断更多。。。先不写了
+        List<UserAttend> userAttendList = userAttendService.getSelfUserAttendAfterTime(attendId, timestamp);
+        JSONArray data = new JSONArray();
+        for (UserAttend ua:userAttendList) {
+            JSONObject jo = new JSONObject();
+            User user = userService.getUserById(ua.getuId());
+            jo.put("msg", "账号:"+user.getAccount() + ", 昵称:" + user.getName()+"（自助签到）");
+            jo.put("attendTime", ua.getAttendTime());
+            data.add(jo);
+        }
+        return rd.trueSuccess().setData(data.toString()).buildReturnMap();
+    }
+
+    @RequestMapping(value = "/userattend/video/{attendId}/{timestamp}", method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String, Object> getVideoUserAttendAfterTime(@PathVariable("attendId") Long attendId, @PathVariable("timestamp") Long timestamp) {
+        ReturnData rd = new ReturnData();
+        Attend attend = attendService.getAttendById(attendId);
+        if (attend == null)
+            return rd.falseSuccess("签到不存在").buildReturnMap();
+        // TODO 这里还应该判断更多。。。先不写了
+        List<UserAttend> userAttendList = userAttendService.getVideoUserAttendAfterTime(attendId, timestamp);
+        JSONArray data = new JSONArray();
+        for (UserAttend ua:userAttendList) {
+            JSONObject jo = new JSONObject();
+            User user = userService.getUserById(ua.getuId());
+            jo.put("msg", "账号:"+user.getAccount() + ", 昵称:" + user.getName()+"（视频签到）");
+            jo.put("attendTime", ua.getAttendTime());
+            data.add(jo);
+        }
+        return rd.trueSuccess().setData(data.toString()).buildReturnMap();
     }
 
 }

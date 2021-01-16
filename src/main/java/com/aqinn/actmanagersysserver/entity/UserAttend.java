@@ -11,11 +11,11 @@ public class UserAttend {
 
     private Long attendId;
 
-    private String attendTime;
+    private Long attendTime;
 
     private Integer attendType;
 
-    public UserAttend(Long uId, Long attendId, String attendTime, Integer attendType) {
+    public UserAttend(Long uId, Long attendId, Long attendTime, Integer attendType) {
         this.uId = uId;
         this.attendId = attendId;
         this.attendTime = attendTime;
@@ -38,11 +38,11 @@ public class UserAttend {
         this.attendId = attendId;
     }
 
-    public String getAttendTime() {
+    public Long getAttendTime() {
         return attendTime;
     }
 
-    public void setAttendTime(String attendTime) {
+    public void setAttendTime(Long attendTime) {
         this.attendTime = attendTime;
     }
 

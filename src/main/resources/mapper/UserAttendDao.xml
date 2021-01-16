@@ -16,4 +16,28 @@
           AND attendId = #{attendId}
     </select>
 
+    <select id="queryUserAttendCount" resultType="Integer">
+        SELECT COUNT(attendId)
+        FROM user_attend
+        WHERE attendId = #{attendId}
+    </select>
+
+    <select id="querySelfUserAttendAfterTime" resultType="UserAttend">
+        SELECT uId, attendId, attendTime, attendType
+        FROM activity_manager.user_attend
+        WHERE attendId = #{attendId}
+          AND attendType = 2
+          AND attendTime <![CDATA[ > ]]> #{time}
+        ORDER BY attendTime DESC
+    </select>
+
+    <select id="queryVideoUserAttendAfterTime" resultType="UserAttend">
+        SELECT uId, attendId, attendTime, attendType
+        FROM activity_manager.user_attend
+        WHERE attendId = #{attendId}
+          AND attendType = 1
+          AND attendTime <![CDATA[ > ]]> #{time}
+        ORDER BY attendTime DESC
+    </select>
+
 </mapper>

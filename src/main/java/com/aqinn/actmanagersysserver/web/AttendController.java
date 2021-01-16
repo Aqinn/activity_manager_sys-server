@@ -1,5 +1,6 @@
 package com.aqinn.actmanagersysserver.web;
 
+import com.alibaba.fastjson.JSONObject;
 import com.aqinn.actmanagersysserver.ReturnData;
 import com.aqinn.actmanagersysserver.entity.Attend;
 import com.aqinn.actmanagersysserver.service.*;
@@ -49,10 +50,15 @@ public class AttendController {
         int type = Integer.parseInt((String) dataMap.get("type"));
         if (type > 3 || type < 1)
             return rd.falseSuccess("签到类型不存在").buildReturnMap();
-        Attend attend = new Attend(userId, actId, (String) dataMap.get("time"), type, 0);
+        Attend attend = new Attend(userId, actId, (String) dataMap.get("time"), type, 1);
         Long id = attendService.createAttend(attend);
         if (id >= 1L) {
-            rd.trueSuccess();
+            JSONObject jo = new JSONObject();
+            jo.put("ownerId", userId);
+            jo.put("attendId", id);
+            jo.put("actName", actService.getActById(actId).getName());
+            jo.put("shouldAttendCount", userActService.getActUsers(actId).size());
+            rd.trueSuccess().setData(jo.toString());
         } else {
             if (id == -1)
                 rd.falseSuccess("用户不存在");
