@@ -65,7 +65,7 @@ public class ActController {
             data.put("id", id);
             data.put("code", code);
             data.put("pwd", pwd);
-            rd.trueSuccess().setData(data);
+            rd.trueSuccess().setData(data.toString());
         } else {
             rd.falseSuccess("创建活动失败, 可能是 1.活动code重复插入,请再创建一次试试 2.创建者不存在");
         }

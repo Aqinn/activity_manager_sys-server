@@ -1,7 +1,9 @@
 package com.aqinn.actmanagersysserver.service.Impl;
 
 import com.aqinn.actmanagersysserver.dao.ActDao;
+import com.aqinn.actmanagersysserver.dao.AttendDao;
 import com.aqinn.actmanagersysserver.entity.Act;
+import com.aqinn.actmanagersysserver.entity.Attend;
 import com.aqinn.actmanagersysserver.service.ActService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,9 @@ public class ActServiceImpl implements ActService {
 
     @Autowired
     private ActDao actDao;
+
+    @Autowired
+    private AttendDao attendDao;
 
     @Override
     public Long createAct(Act act) {
@@ -67,6 +72,10 @@ public class ActServiceImpl implements ActService {
     public int stopAct(Long id) {
         Act act = actDao.queryActById(id);
         act.setIsOpen(3);
+        List<Attend> attendList = attendDao.queryAttendByActId(id);
+        for (Attend attend: attendList) {
+            attendDao.stopAttend(attend.getId());
+        }
         return actDao.updateAct(act);
     }
 

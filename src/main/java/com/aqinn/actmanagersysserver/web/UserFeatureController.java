@@ -102,6 +102,8 @@ public class UserFeatureController {
         Attend attend = attendService.getAttendById(attendId);
         if (attend == null)
             return rd.falseSuccess("签到不存在").buildReturnMap();
+        if (!attend.getIsOpen().equals(2))
+            return rd.falseSuccess("签到并未进行中").buildReturnMap();
         Act act = actService.getActById(attend.getActId());
         if (act == null)
             return rd.falseSuccess("签到所对应的活动不存在，后台背锅").buildReturnMap();
@@ -149,6 +151,8 @@ public class UserFeatureController {
         Attend attend = attendService.getAttendById(attendId);
         if (attend == null)
             return rd.falseSuccess("签到不存在").buildReturnMap();
+        if (!attend.getIsOpen().equals(2))
+            return rd.falseSuccess("签到并未进行中").buildReturnMap();
         Act act = actService.getActById(attend.getActId());
         if (act == null)
             return rd.falseSuccess("签到所对应的活动不存在，后台背锅").buildReturnMap();

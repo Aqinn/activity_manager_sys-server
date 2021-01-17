@@ -75,6 +75,7 @@ public class UserActController {
             data.put("time", act.getTime());
             data.put("location", act.getLocation());
             data.put("intro", act.getDesc());
+            data.put("status", act.getIsOpen());
             rd.trueSuccess().setData(data);
             if (UserFeatureController.actFeatures.containsKey(act.getId())) {
                 new Thread(new Runnable() {

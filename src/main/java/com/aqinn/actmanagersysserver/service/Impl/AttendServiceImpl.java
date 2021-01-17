@@ -3,6 +3,7 @@ package com.aqinn.actmanagersysserver.service.Impl;
 import com.aqinn.actmanagersysserver.dao.ActDao;
 import com.aqinn.actmanagersysserver.dao.AttendDao;
 import com.aqinn.actmanagersysserver.dao.UserDao;
+import com.aqinn.actmanagersysserver.entity.Act;
 import com.aqinn.actmanagersysserver.entity.Attend;
 import com.aqinn.actmanagersysserver.service.AttendService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,11 @@ public class AttendServiceImpl implements AttendService {
 
     @Override
     public int startAttend(Long id) {
+        Attend attend = attendDao.queryAttendById(id);
+        Act act = actDao.queryActById(attend.getActId());
+        if (act.getIsOpen() != 2) {
+            return -1;
+        }
         return attendDao.startAttend(id);
     }
 

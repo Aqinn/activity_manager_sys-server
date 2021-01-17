@@ -139,6 +139,9 @@ public class AttendController {
         } else {
             if (res == 0)
                 rd.falseSuccess("签到已经是开启状态");
+            else if (res == -1){
+                rd.falseSuccess("活动尚未开始");
+            }
             else
                 rd.falseSuccess("开启签到失败，未知原因");
         }
